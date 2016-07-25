@@ -6,6 +6,7 @@
 * -----------------------------------------------
 * by DIATOM Internet & Medien GmbH // 27.07.2009
 * by Proud Sourcing GmbH // 19.07.2013
+* by Joachim Barthel  // 25.07.2016
 * -----------------------------------------------
 *
 * / install
@@ -46,7 +47,9 @@ class ShopConfig
 {
     public function __construct()
     {
-        include_once('config.inc.php');
+        //$sShopDir = './';   // if stored in shop root
+        $sShopDir = '../';  // if stored eg. in /bin folder
+        include_once( $sShopDir.'config.inc.php');
 
         /* append sShopURL with / */
         if ((substr($this->sShopURL, -strlen($this->sShopURL)) !== "/")){
@@ -61,11 +64,11 @@ $mod_cnf['siteurl']             = $shopConfig->sShopURL;	// shop url (with endin
 $mod_cnf['dbhost']              = $shopConfig->dbHost;		// dbhost
 $mod_cnf['dbname']              = $shopConfig->dbName;		// dbname            
 $mod_cnf['dbuser']              = $shopConfig->dbUser;		// dbuser
-$mod_cnf['dbpass']              = $shopConfig->dbPwd;       // dbpass
+$mod_cnf['dbpass']              = $shopConfig->dbPwd;		// dbpass
 
 // configuration data
-$mod_cnf['filepath']            = './';						// fullpath to sitemaps
-$mod_cnf['filename']            = 'sitemap';				// basename for sitemaps
+$mod_cnf['filepath']            = $shopConfig->sShopDir . '/export/';						// fullpath to sitemaps
+$mod_cnf['filename']            = 'sitemap';			// basename for sitemaps
 $mod_cnf['offset']              = 20000;					// how many product-urls in each sitemap? (max. allowed: 50.000 urls (total, with cats and cms) && max. filesize: 10Mb (uncompressed!))         
 $mod_cnf['language']            = 0;                        // shop language id
 $mod_cnf['expired']             = true;                     // true for using also oxseo.oxexpired = 1 (normally only oxseo.oxexpired = 0)
@@ -77,7 +80,7 @@ $mod_cnf['export_products_ma']  = true;                     // export manufactur
 $mod_cnf['export_products_ve']  = true;                     // export vendor products?
 $mod_cnf['export_cms']          = true;                     // export cms pages?
 $mod_cnf['export_vendor']       = true;                     // export vendors?
-$mod_cnf['export_manufcaturer'] = true;                     // export manufacturers?
+$mod_cnf['export_manufacturer'] = true;                     // export manufacturers?
 $mod_cnf['export_tags']         = true;                     // export tags?
 $mod_cnf['export_static']       = true;                      // export static seo urls?
 
@@ -85,26 +88,24 @@ $mod_cnf['export_static']       = true;                      // export static se
 
 // which run?: script calls with '-c [n]'
 // first run (without params) -> call #1
-if ("-c" != $_SERVER['argv'][1])
-{
-    $pcall = 1;
-}
-else {
-    $pcall = $_SERVER['argv'][2];
-    if (!preg_match("/[\d]/",$pcall))
+if (isset($_SERVER['argc'][1])){
+    if ("-c" != $_SERVER['argv'][1])
     {
-        die("Illegal call.\n");
+        $pcall = 1;
     }
+    else {
+        $pcall = $_SERVER['argv'][2];
+        if (!preg_match("/[\d]/",$pcall))
+        {
+            die("Illegal call.\n");
+        }
+    }
+} else {
+    $pcall = 1;
 }
 
 // db connection
-$sqlConnect = mysql_connect(
-    $mod_cnf['dbhost'],
-    $mod_cnf['dbuser'],
-    $mod_cnf['dbpass']) OR die('error connecting to database.');
-mysql_select_db(
-    $mod_cnf['dbname'],
-    $sqlConnect) OR die('error selecting table.');
+$dbh = new PDO('mysql:host='.$mod_cnf['dbhost'].';dbname='.$mod_cnf['dbname'], $mod_cnf['dbuser'], $mod_cnf['dbpass']);
 
 //** get number of needed script-calls, based on active items with valid seo-url. cms and categories will be added to first sitemap automatically.
 $cntCalls = ceil(getCountScriptCalls() / $mod_cnf['offset']);
@@ -124,13 +125,13 @@ if (1 == $pcall)
         $xmlList_vendor = getVendors();
     }
     
-    // get manufcaturer data from shop - only at first script-run! (-c 1)
-    if($mod_cnf['export_manufcaturer'])
+    // get manufacturer data from shop - only at first script-run! (-c 1)
+    if($mod_cnf['export_manufacturer'])
     {
         $xmlList_manufacturer = getManufacturers();    
     }
     
-    // get manufcaturer data from shop
+    // get manufacturer data from shop
     if($mod_cnf['export_tags'])
     {
         $xmlList_tags = getTags();  
@@ -167,8 +168,18 @@ if($mod_cnf['export_products'])
     $xmlList_prod = getProducts($pcall);
 }
 
+$dbh = NULL;
+
 // build xml-data and output
-$xmlList = array_merge($xmlList_prod, $xmlList_prod_vendor, $xmlList_prod_manufacturer, $xmlList_cat, $xmlList_cms, $xmlList_vendor, $xmlList_manufacturer, $xmlList_tags, $xmlList_static);
+$xmlList = array_merge($xmlList_prod, 
+                        $xmlList_prod_vendor, 
+                        $xmlList_prod_manufacturer, 
+                        $xmlList_cat, 
+                        $xmlList_cms, 
+                        $xmlList_vendor, 
+                        $xmlList_manufacturer, 
+                        $xmlList_tags, 
+                        $xmlList_static);
 
 // create sitemap
 $sitemapdata = createSitemap($xmlList);
@@ -205,6 +216,7 @@ exit(0);
 function getCategories()
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
     $sql = "SELECT 
                 seo.oxseourl
@@ -221,17 +233,16 @@ function getCategories()
                 seo.oxlang = ".$mod_cnf['language']."               
             GROUP BY
                 oxcats.oxid;";
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+
+    foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '1.0',
             'lastmod'       => date("Y-m-d") . 'T' . date("h:i:s") . '+00:00',
             'changefreq'    => 'weekly',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -241,6 +252,7 @@ function getCategories()
 function getCmsSite()
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
     $sql = "SELECT
                 seo.oxseourl
@@ -258,17 +270,15 @@ function getCmsSite()
             GROUP BY
                 content.oxid;";
    
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+    foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '0.6',
             'lastmod'       => date("Y-m-d") . 'T' . date("h:i:s") . '+00:00',
             'changefreq'    => 'weekly',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -278,6 +288,7 @@ function getCmsSite()
 function getVendors()
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
     $sql = "SELECT
                 seo.oxseourl
@@ -294,17 +305,15 @@ function getVendors()
             GROUP BY
                 vendor.oxid;";
    
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+    foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '0.7',
             'lastmod'       => date("Y-m-d") . 'T' . date("h:i:s") . '+00:00',
             'changefreq'    => 'weekly',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -314,6 +323,7 @@ function getVendors()
 function getManufacturers()
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
     $sql = "SELECT
                 seo.oxseourl
@@ -330,17 +340,15 @@ function getManufacturers()
             GROUP BY
                 manufacturer.oxid;";
    
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+    foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '0.7',
             'lastmod'       => date("Y-m-d") . 'T' . date("h:i:s") . '+00:00',
             'changefreq'    => 'weekly',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -350,6 +358,7 @@ function getManufacturers()
 function getTags()
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
     $sql = "SELECT
                 seo.oxseourl
@@ -362,17 +371,15 @@ function getTags()
                 ".($mod_cnf['expired'] == true ? '': 'seo.oxexpired = 0 AND ')."
                 seo.oxlang = ".$mod_cnf['language'];
    
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+    foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '0.8',
             'lastmod'       => date("Y-m-d") . 'T' . date("h:i:s") . '+00:00',
             'changefreq'    => 'weekly',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -382,6 +389,7 @@ function getTags()
 function getStaticUrls()
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
     $sql = "SELECT
                 seo.oxseourl
@@ -393,17 +401,15 @@ function getStaticUrls()
                 ".($mod_cnf['expired'] == true ? '': 'seo.oxexpired = 0 AND ')."
                 seo.oxlang = ".$mod_cnf['language'];
    
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+    foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '0.5',
             'lastmod'       => date("Y-m-d") . 'T' . date("h:i:s") . '+00:00',
             'changefreq'    => 'weekly',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -413,6 +419,7 @@ function getStaticUrls()
 function getProducts($limit)
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
 
     // calculate offset
@@ -448,23 +455,21 @@ function getProducts($limit)
                 oxart.oxid
             LIMIT ".$start." OFFSET ".$end.";";
                        
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+    foreach ($dbh->query($sql) as $row)
     {
-        $lastmod = $sql_row['oxtimestamp'];
+        $lastmod = $row['oxtimestamp'];
         if ("0000-00-00 00:00:00" == $lastmod)
         {
-        $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
+            $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
         }
         $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '1.0',
             'lastmod'       => $lastmod,
             'changefreq'    => 'daily',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -474,9 +479,11 @@ function getProducts($limit)
 function getProductsManufacturer()
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
                
     $sql = "SELECT
+                oxart.oxtimestamp,
                 seo.oxseourl
             FROM
                 oxarticles as oxart
@@ -491,23 +498,21 @@ function getProductsManufacturer()
             GROUP BY
                 oxart.oxid";
                        
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+    foreach ($dbh->query($sql) as $row)
     {
-        $lastmod = $sql_row['oxtimestamp'];
+        $lastmod = $row['oxtimestamp'];
         if ("0000-00-00 00:00:00" == $lastmod)
         {
-        $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
+            $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
         }
         $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '0.9',
             'lastmod'       => $lastmod,
             'changefreq'    => 'daily',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -517,9 +522,11 @@ function getProductsManufacturer()
 function getProductsVendor()
 {
     global $mod_cnf;
+    global $dbh;
     $list = array();
                
     $sql = "SELECT
+                oxart.oxtimestamp,
                 seo.oxseourl
             FROM
                 oxarticles as oxart
@@ -534,23 +541,21 @@ function getProductsVendor()
             GROUP BY
                 oxart.oxid";
                        
-    $sql_query = mysql_query($sql);
-    while ($sql_row = mysql_fetch_array($sql_query))
+    foreach ($dbh->query($sql) as $row)
     {
-        $lastmod = $sql_row['oxtimestamp'];
+        $lastmod = $row['oxtimestamp'];
         if ("0000-00-00 00:00:00" == $lastmod)
         {
-        $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
+            $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
         }
         $lastmod = date("Y-m-d") . 'T' . date("h:i:s") . '+00:00';
         $list[] = array(
-            'loc'           => $mod_cnf['siteurl'] . $sql_row['oxseourl'],
+            'loc'           => $mod_cnf['siteurl'] . $row['oxseourl'],
             'priority'      => '0.9',
             'lastmod'       => $lastmod,
             'changefreq'    => 'daily',
         );
     }
-    mysql_free_result($sql_query);
     return $list;
 }
 
@@ -560,6 +565,7 @@ function getProductsVendor()
 function getCountScriptCalls()
 {
     global $mod_cnf;
+    global $dbh;
     $sql = "SELECT
                 oxart.oxid
             FROM
@@ -579,8 +585,7 @@ function getCountScriptCalls()
                 seo.oxtype='oxarticle'
             GROUP BY
                 oxart.oxid;";
-    $query = mysql_query($sql);
-    return mysql_num_rows($query);
+    return( count($dbh->query($sql)) );
 }
 
 /** creates xml data / sitemap-content
