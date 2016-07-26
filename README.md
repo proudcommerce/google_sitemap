@@ -7,6 +7,12 @@ Installation
 	2. open the file with a text editor or your IDE and enter your details for URL and database
 	3. fire up your browser at [http://www.youroxideshop.com/google_sitemap_xml.php] to generate a new sitemap file
 
+Alternative
+
+	1. Download and extract to folder /bin of the shop 
+	2. Open the file with a text editor or your IDE and enter your details for URL and database
+	3. Change to folder /bin and enter ´php google_sitemap_xml.php´ to generate a new sitemap file
+
 Configuration
 
     // configuration data
