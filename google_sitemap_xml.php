@@ -62,14 +62,15 @@ $shopConfig = new ShopConfig();
 // configuration database
 $mod_cnf['siteurl']             = $shopConfig->sShopURL;	// shop url (with ending slash!)
 $mod_cnf['dbhost']              = $shopConfig->dbHost;		// dbhost
-$mod_cnf['dbname']              = $shopConfig->dbName;		// dbname            
+$mod_cnf['dbname']              = $shopConfig->dbName;		// dbname
 $mod_cnf['dbuser']              = $shopConfig->dbUser;		// dbuser
 $mod_cnf['dbpass']              = $shopConfig->dbPwd;		// dbpass
 
 // configuration data
-$mod_cnf['filepath']            = $shopConfig->sShopDir . '/export/';						// fullpath to sitemaps
+$mod_cnf['exportdir']           = 'export';
+$mod_cnf['filepath']            = $shopConfig->sShopDir . '/'. $mod_cnf['exportdir'] .'/';						// fullpath to sitemaps
 $mod_cnf['filename']            = 'sitemap';			// basename for sitemaps
-$mod_cnf['offset']              = 20000;					// how many product-urls in each sitemap? (max. allowed: 50.000 urls (total, with cats and cms) && max. filesize: 10Mb (uncompressed!))         
+$mod_cnf['offset']              = 20000;					// how many product-urls in each sitemap? (max. allowed: 50.000 urls (total, with cats and cms) && max. filesize: 10Mb (uncompressed!))
 $mod_cnf['language']            = 0;                        // shop language id
 $mod_cnf['expired']             = true;                     // true for using also oxseo.oxexpired = 1 (normally only oxseo.oxexpired = 0)
 
@@ -104,8 +105,16 @@ if (isset($_SERVER['argc'][1])){
     $pcall = 1;
 }
 
+$mod_cnf['dbport'] = "";
+$aTmp = explode(":",$mod_cnf['dbhost']);
+if (count($aTmp) > 1) {
+    $mod_cnf['dbhost'] = $aTmp[0];
+    $mod_cnf['dbport'] = $aTmp[1];
+}
+
+
 // db connection
-$dbh = new PDO('mysql:host='.$mod_cnf['dbhost'].';dbname='.$mod_cnf['dbname'], $mod_cnf['dbuser'], $mod_cnf['dbpass']);
+$dbh = new PDO('mysql:host='.$mod_cnf['dbhost']. ((!empty($mod_cnf['dbport'])) ? (';port=' . $mod_cnf['dbport']) : '') .';dbname='.$mod_cnf['dbname'], $mod_cnf['dbuser'], $mod_cnf['dbpass']);
 
 //** get number of needed script-calls, based on active items with valid seo-url. cms and categories will be added to first sitemap automatically.
 $cntCalls = ceil(getCountScriptCalls() / $mod_cnf['offset']);
@@ -118,37 +127,37 @@ if (1 == $pcall)
     {
         $xmlList_cms = getCmsSite();
     }
-   
+
     // get vendor data from shop - only at first script-run! (-c 1)
     if($mod_cnf['export_vendor'])
     {
         $xmlList_vendor = getVendors();
     }
-    
+
     // get manufacturer data from shop - only at first script-run! (-c 1)
     if($mod_cnf['export_manufacturer'])
     {
-        $xmlList_manufacturer = getManufacturers();    
+        $xmlList_manufacturer = getManufacturers();
     }
-    
+
     // get manufacturer data from shop
     if($mod_cnf['export_tags'])
     {
-        $xmlList_tags = getTags();  
+        $xmlList_tags = getTags();
     }
-    
+
     // get static seo data from shop
     if($mod_cnf['export_static'])
     {
-        $xmlList_static = getStaticUrls();  
-    }    
-    
+        $xmlList_static = getStaticUrls();
+    }
+
     // get all categories
     if($mod_cnf['export_categories'])
     {
         $xmlList_cat = getCategories();
     }
-    
+
     // get vendor products
     if($mod_cnf['export_products_ve'])
     {
@@ -158,7 +167,7 @@ if (1 == $pcall)
     // get manufacturer products
     if($mod_cnf['export_products_ma'])
     {
-        $xmlList_prod_manufacturer = getProductsManufacturer();    
+        $xmlList_prod_manufacturer = getProductsManufacturer();
     }
 }
 
@@ -171,14 +180,14 @@ if($mod_cnf['export_products'])
 $dbh = NULL;
 
 // build xml-data and output
-$xmlList = array_merge($xmlList_prod, 
-                        $xmlList_prod_vendor, 
-                        $xmlList_prod_manufacturer, 
-                        $xmlList_cat, 
-                        $xmlList_cms, 
-                        $xmlList_vendor, 
-                        $xmlList_manufacturer, 
-                        $xmlList_tags, 
+$xmlList = array_merge($xmlList_prod,
+                        $xmlList_prod_vendor,
+                        $xmlList_prod_manufacturer,
+                        $xmlList_cat,
+                        $xmlList_cms,
+                        $xmlList_vendor,
+                        $xmlList_manufacturer,
+                        $xmlList_tags,
                         $xmlList_static);
 
 // create sitemap
@@ -196,7 +205,7 @@ if ($pcall < $cntCalls)
 {
     // memory seems to hold list-array-values, maybe depends on local environment
     unset($xmlList,$xmlList_cat,$xmlList_cms,$xmlList_vendor,$xmlList_manufacturer,$xmlList_tags,$xmlList_prod, $xmlList_prod_manufacturer,$xmlList_prod_vendor,$xmlList_static);
-   
+
     // call itself
     $exec = './googlesitemap.sh -c '.($pcall+1);
     //echo "\n".$exec."\n"; //debug
@@ -205,7 +214,7 @@ if ($pcall < $cntCalls)
 }
 
 //** exit all
-//echo "\nready.\n";    // debug   
+//echo "\nready.\n";    // debug
 exit(0);
 
 // ** FUNCTIONS
@@ -269,7 +278,7 @@ function getCmsSite()
                 AND seo.oxlang = ".$mod_cnf['language']."
             GROUP BY
                 content.oxid;";
-   
+
     foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
@@ -304,7 +313,7 @@ function getVendors()
                 seo.oxlang = ".$mod_cnf['language']."
             GROUP BY
                 vendor.oxid;";
-   
+
     foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
@@ -339,7 +348,7 @@ function getManufacturers()
                 seo.oxlang = ".$mod_cnf['language']."
             GROUP BY
                 manufacturer.oxid;";
-   
+
     foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
@@ -370,7 +379,7 @@ function getTags()
                 seo.oxtype='dynamic' AND
                 ".($mod_cnf['expired'] == true ? '': 'seo.oxexpired = 0 AND ')."
                 seo.oxlang = ".$mod_cnf['language'];
-   
+
     foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
@@ -400,7 +409,7 @@ function getStaticUrls()
                 seo.oxtype='static' AND
                 ".($mod_cnf['expired'] == true ? '': 'seo.oxexpired = 0 AND ')."
                 seo.oxlang = ".$mod_cnf['language'];
-   
+
     foreach ($dbh->query($sql) as $row)
     {
         $list[] = array(
@@ -431,7 +440,7 @@ function getProducts($limit)
     else {
         $end = (($limit-1) * $mod_cnf['offset']) - 1;
     }
-               
+
     $sql = "SELECT
                 oxart.oxtimestamp,
                 seo.oxseourl
@@ -454,7 +463,7 @@ function getProducts($limit)
             GROUP BY
                 oxart.oxid
             LIMIT ".$start." OFFSET ".$end.";";
-                       
+
     foreach ($dbh->query($sql) as $row)
     {
         $lastmod = $row['oxtimestamp'];
@@ -481,7 +490,7 @@ function getProductsManufacturer()
     global $mod_cnf;
     global $dbh;
     $list = array();
-               
+
     $sql = "SELECT
                 oxart.oxtimestamp,
                 seo.oxseourl
@@ -497,7 +506,7 @@ function getProductsManufacturer()
                 seo.oxstdurl LIKE ('%mnid=%')
             GROUP BY
                 oxart.oxid";
-                       
+
     foreach ($dbh->query($sql) as $row)
     {
         $lastmod = $row['oxtimestamp'];
@@ -524,7 +533,7 @@ function getProductsVendor()
     global $mod_cnf;
     global $dbh;
     $list = array();
-               
+
     $sql = "SELECT
                 oxart.oxtimestamp,
                 seo.oxseourl
@@ -540,7 +549,7 @@ function getProductsVendor()
                 seo.oxstdurl LIKE ('%cnid=v%')
             GROUP BY
                 oxart.oxid";
-                       
+
     foreach ($dbh->query($sql) as $row)
     {
         $lastmod = $row['oxtimestamp'];
@@ -601,7 +610,7 @@ function createSitemap($data)
     {
         $mapdata[] = '<url><loc>'. $val['loc'] .'</loc><priority>'. $val['priority'] .'</priority><lastmod>'. $val['lastmod'] .'</lastmod><changefreq>'. $val['changefreq'] .'</changefreq></url>';
     }
-   
+
     $mapdata[] = '</urlset>';
     // print sitemap data
     #print_r($mapdata);
@@ -641,19 +650,19 @@ function createSitemapIndex()
     global $pcall,$mod_cnf;
     $sitemaps = array();
     $maps = array();
-      
+
     // build xml-content
     $smindex = '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
     for ($i=1;$i<=$pcall;$i++)
     {
-        $loc = '<loc>'.$mod_cnf['siteurl'].$mod_cnf['filename'].$i.'.xml</loc>';
+        $loc = '<loc>'.$mod_cnf['siteurl'].$mod_cnf['exportdir']."/".$mod_cnf['filename'].$i.'.xml</loc>';
         $last = '<lastmod>'.date("Y-m-d").'T'.date("H:i:s").'+00:00</lastmod>';
         $sitemaps[] = '<sitemap>'.$loc.$last.'</sitemap>';
     }
     $maps = $smindex . "\n" . implode("\n",$sitemaps);
-   
+
     $sitemapindex = $maps . "\n</sitemapindex>";
-   
+
     // write to file
     @file_put_contents($mod_cnf['filename'].'.xml',$sitemapindex);
     return;
