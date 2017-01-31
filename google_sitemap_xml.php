@@ -621,9 +621,7 @@ function getCountScriptCalls()
                 oxcat.oxhidden = 0 AND
                 {$expired}
                 seo.oxlang = {$mod_cnf['language']} AND
-                seo.oxtype='oxarticle'
-            GROUP BY
-                oxart.oxid;";
+                seo.oxtype='oxarticle'";
 
     $rowCount = $dbh->query($sql)->fetchColumn();
 
