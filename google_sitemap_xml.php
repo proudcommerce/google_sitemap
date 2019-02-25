@@ -111,7 +111,7 @@ $mod_cnf['export_static']       = true;                     // export static seo
 // which run?: script calls with '-c [n]'
 // first run (without params) -> call #1
 $pcall = 1;
-if (isset($_SERVER['argc'][1])) {
+if (isset($_SERVER['argv'][1])) {
     if ("-c" == $_SERVER['argv'][1]) {
         $pcall = $_SERVER['argv'][2];
         if (!preg_match("/\d+/", $pcall)) {
