@@ -68,8 +68,8 @@ class ShopConfig
 
     public function __construct()
     {
-        //$sShopDir = './';   // if stored in shop root
-        $sShopDir = '../';  // if stored eg. in /bin folder
+        $sShopDir = './';   // if stored in shop root
+        //$sShopDir = '../';  // if stored eg. in /bin folder
         include_once $sShopDir . 'config.inc.php';
 
         /* append sShopURL with / */
@@ -90,8 +90,7 @@ $mod_cnf['dbpass']  = $shopConfig->dbPwd;       // dbpass
 $mod_cnf['exportdir'] = 'export';
 $mod_cnf['filepath']  = "{$shopConfig->sShopDir}/{$mod_cnf['exportdir']}/";   // fullpath to sitemaps
 $mod_cnf['filename']  = 'sitemap';    // basename for sitemaps
-$mod_cnf['offset']    =
-    20000;        // how many product-urls in each sitemap? (max. allowed: 50.000 urls (total, with cats and cms) && max. filesize: 10Mb (uncompressed!))
+$mod_cnf['offset']    = 20000;        // how many product-urls in each sitemap? (max. allowed: 50.000 urls (total, with cats and cms) && max. filesize: 10Mb (uncompressed!))
 $mod_cnf['language']  = 0;            // shop language id
 $mod_cnf['expired']   = true;         // true for using also oxseo.oxexpired = 1 (normally only oxseo.oxexpired = 0)
 
@@ -103,7 +102,7 @@ $mod_cnf['export_products_ve']  = true;                     // export vendor pro
 $mod_cnf['export_cms']          = true;                     // export cms pages?
 $mod_cnf['export_vendor']       = true;                     // export vendors?
 $mod_cnf['export_manufacturer'] = true;                     // export manufacturers?
-$mod_cnf['export_tags']         = true;                     // export tags?
+$mod_cnf['export_tags']         = false;                    // export tags?
 $mod_cnf['export_static']       = true;                     // export static seo urls?
 
 /* ----------------- DO NOT EDIT ANYTHING BEHIND THIS LINE ----------------- */
