@@ -243,7 +243,7 @@ function getCategories()
     $expired = $mod_cnf['expired'] ? '' : 'seo.oxexpired = 0 AND ';
 
     $sql = "SELECT 
-                seo.oxseourl
+                oxcats.oxid, seo.oxseourl
             FROM
                 oxcategories as oxcats
             LEFT JOIN
@@ -256,15 +256,19 @@ function getCategories()
                 {$expired}
                 seo.oxlang = {$mod_cnf['language']}
             GROUP BY
-                oxcats.oxid;";
+                oxcats.oxid, seo.oxseourl;";
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '1.0',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'weekly',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '1.0',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'weekly',
+            ];
+        }
     }
 
     return $list;
@@ -283,7 +287,7 @@ function getCmsSite()
     $expired = $mod_cnf['expired'] ? '' : 'seo.oxexpired = 0 AND ';
 
     $sql = "SELECT
-                seo.oxseourl
+                content.oxid, seo.oxseourl
             FROM
                 oxcontents as content
             LEFT JOIN
@@ -296,15 +300,19 @@ function getCmsSite()
                 {$expired}
                 AND seo.oxlang = {$mod_cnf['language']}
             GROUP BY
-                content.oxid;";
+                content.oxid, seo.oxseourl;";
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '0.6',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'weekly',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '0.6',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'weekly',
+            ];
+        }
     }
 
     return $list;
@@ -323,7 +331,7 @@ function getVendors()
     $list    = [];
 
     $sql = "SELECT
-                seo.oxseourl
+                vendor.oxid, seo.oxseourl
             FROM
                 oxvendor as vendor
             LEFT JOIN
@@ -335,15 +343,19 @@ function getVendors()
                 {$expired}
                 seo.oxlang = {$mod_cnf['language']}
             GROUP BY
-                vendor.oxid;";
+                vendor.oxid, seo.oxseourl;";
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '0.7',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'weekly',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '0.7',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'weekly',
+            ];
+        }
     }
 
     return $list;
@@ -361,7 +373,7 @@ function getManufacturers()
     $list    = [];
 
     $sql = "SELECT
-                seo.oxseourl
+                manufacturer.oxid, seo.oxseourl
             FROM
                 oxmanufacturers as manufacturer
             LEFT JOIN
@@ -373,15 +385,19 @@ function getManufacturers()
                 {$expired}
                 seo.oxlang = {$mod_cnf['language']}
             GROUP BY
-                manufacturer.oxid;";
+                manufacturer.oxid, seo.oxseourl;";
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '0.7',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'weekly',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '0.7',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'weekly',
+            ];
+        }
     }
 
     return $list;
@@ -410,13 +426,17 @@ function getTags()
                 {$expired}
                 seo.oxlang = " . $mod_cnf['language'];
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '0.8',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'weekly',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '0.8',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'weekly',
+            ];
+        }
     }
 
     return $list;
@@ -444,13 +464,17 @@ function getStaticUrls()
                 {$expired}
                 seo.oxlang = " . $mod_cnf['language'];
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '0.5',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'weekly',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '0.5',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'weekly',
+            ];
+        }
     }
 
     return $list;
@@ -480,8 +504,7 @@ function getProducts($limit)
     $expired = $mod_cnf['expired'] ? '' : 'seo.oxexpired = 0 AND ';
 
     $sql = "SELECT
-                oxart.oxtimestamp,
-                seo.oxseourl
+                oxart.oxid, seo.oxseourl
             FROM
                 oxarticles as oxart
             LEFT JOIN oxobject2category as oxobj2cat
@@ -499,16 +522,20 @@ function getProducts($limit)
                 {$expired}
                 seo.oxstdurl LIKE ('%cnid=%')
             GROUP BY
-                oxart.oxid
+                oxart.oxid, seo.oxseourl
             LIMIT " . $start . " OFFSET " . $end . ";";
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '1.0',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'daily',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '1.0',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'daily',
+            ];
+        }
     }
 
     return $list;
@@ -527,8 +554,7 @@ function getProductsManufacturer()
     $expired = $mod_cnf['expired'] ? '' : 'seo.oxexpired = 0 AND ';
 
     $sql = "SELECT
-                oxart.oxtimestamp,
-                seo.oxseourl
+                oxart.oxid, seo.oxseourl
             FROM
                 oxarticles as oxart
             LEFT JOIN oxseo as seo
@@ -540,15 +566,19 @@ function getProductsManufacturer()
                 {$expired}
                 seo.oxstdurl LIKE ('%mnid=%')
             GROUP BY
-                oxart.oxid";
+                oxart.oxid, seo.oxseourl";
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '0.9',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'daily',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '0.9',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'daily',
+            ];
+        }
     }
 
     return $list;
@@ -567,8 +597,7 @@ function getProductsVendor()
     $expired = $mod_cnf['expired'] ? '' : 'seo.oxexpired = 0 AND ';
 
     $sql = "SELECT
-                oxart.oxtimestamp,
-                seo.oxseourl
+                oxart.oxid, seo.oxseourl
             FROM
                 oxarticles as oxart
             LEFT JOIN oxseo as seo
@@ -580,15 +609,19 @@ function getProductsVendor()
                 {$expired}
                 seo.oxstdurl LIKE ('%cnid=v%')
             GROUP BY
-                oxart.oxid";
+                oxart.oxid, seo.oxseourl";
 
-    foreach ($dbh->query($sql) as $row) {
-        $list[] = [
-            'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
-            'priority'   => '0.9',
-            'lastmod'    => date(DateTime::ATOM),
-            'changefreq' => 'daily',
-        ];
+    $results = $dbh->query($sql);
+    
+    if ($results) {
+        foreach ($results as $row) {
+            $list[] = [
+                'loc'        => $mod_cnf['siteurl'] . $row['oxseourl'],
+                'priority'   => '0.9',
+                'lastmod'    => date(DATE_ATOM),
+                'changefreq' => 'daily',
+            ];
+        }
     }
 
     return $list;
@@ -709,7 +742,7 @@ function createSitemapIndex()
     for ($i = 1; $i <= $pcall; $i++) {
         $loc        =
             '<loc>' . $mod_cnf['siteurl'] . $mod_cnf['exportdir'] . "/" . $mod_cnf['filename'] . $i . '.xml</loc>';
-        $last       = '<lastmod>' . date(DateTime::ATOM) . '</lastmod>';
+        $last       = '<lastmod>' . date(DATE_ATOM) . '</lastmod>';
         $sitemaps[] = '<sitemap>' . $loc . $last . '</sitemap>';
     }
     $maps = $smindex . "\n" . implode("\n", $sitemaps);
